@@ -1,4 +1,4 @@
-use std::convert::Infallible;
+
 use std::net::SocketAddr;
 
 use http_body_util::Full;
@@ -7,8 +7,9 @@ use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper::{Request, Response};
 use hyper_util::rt::TokioIo;
+use reqwest::{Client, Error, IntoUrl};
 
-use tokio::net::TcpListener;
+use tokio::net::{TcpListener};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -41,13 +42,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 async fn handle_request(
     req: Request<hyper::body::Incoming>,
-) -> Result<Response<Full<Bytes>>, Infallible> {
-//    let res = reqwest::get("https://hyper.rs".into()).await?;
-
+) -> Result<Response<Full<Bytes>>, reqwest::Error> {
     match req.uri().path() {
         "/service1" => Ok(Response::new(Full::new(Bytes::from("Service 1")))),
         "/service2" => Ok(Response::new(Full::new(Bytes::from("Service 2")))),
-      //  "/hyper" => Ok(Response::new(Full::new(Bytes::from(res)))),
         _ => Ok(Response::new(Full::new(Bytes::from("No Service!")))),
     }
+}
+
+async fn get<T: IntoUrl + Clone>(url: T) -> Result<reqwest::Response, Error> {
+    Client::builder()
+        .build()?
+        .get(url)
+        .send()
+        .await
 }
